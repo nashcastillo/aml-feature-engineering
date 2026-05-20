@@ -1,22 +1,34 @@
 # Backlog après pass de simplification
 
 **Date de création :** 2026-05-10
-**Dernière mise à jour :** 2026-05-19 — projet finalisé
+**Dernière mise à jour :** 2026-05-20 — pass de fixes pré-soutenance
 **Projet :** aml-feature-engineering
+
+> **Renommage 2026-05-20** : ce qu'on appelait « **GNN embeddings** » dans les versions précédentes est en réalité un **autoencoder MLP per-compte** (pas de message passing graphique). Renommé partout en « **Account Autoencoder (AE)** » pour honnêteté technique. La composante « graphe » réelle du projet vient du Stage 1.2 (NetworkX : PageRank + degrees), déjà intégré aux 18 features de base.
+
+> **Liste pays sanctions 2026-05-21** : la règle R2 du baseline rule-based utilise une **UNION 4 sources officielles** (41 pays uniques, mai 2026) :
+> - **ONU** Security Council sanctions regimes (14 pays sous sanctions actives, avril 2026) — [un.org Consolidated List](https://main.un.org/securitycouncil/en/content/un-sc-consolidated-list)
+> - **OFAC** sanctions programs incl. Ethiopia EO 14046 (8 pays apportés en plus de l'ONU) — [ofac.treasury.gov](https://ofac.treasury.gov/sanctions-programs-and-country-information)
+> - **GAFI/FATF** black + grey list (plénière 13 février 2026 : 3 black + 22 grey) — [fatf-gafi.org](https://www.fatf-gafi.org/en/countries/black-and-grey-lists.html)
+> - **UE** Règlement délégué 2016/1675 amendé par 2025/1184, 2026/46 et 2026/83 (26 pays) — [eur-lex 2026/46](http://data.europa.eu/eli/reg_del/2026/46/oj)
+>
+> **10 pays retirés** des listes en 2024-2026 après réformes (Barbados, Cayman Islands, Gibraltar, Jamaica, Jordan, Panama, Philippines, Senegal, Uganda, UAE) — exclus conformément aux dernières plénières GAFI et règlements UE.
+>
+> Cette liste **complète** la liste interne `SENDER_RISKY` calculée sur train (Albania, Italy, Netherlands…) via `set | set`. Défense oral : « ma liste combine 4 sources réglementaires officielles à jour + enrichissement interne par retour d'expérience sur les typologies observées ».
 
 ---
 
 ## État final 2026-05-19 — Synthèse complète terminée
 
-**Modèle final retenu :** LightGBM tuné + calibration sigmoid + **GNN embeddings**
+**Modèle final retenu :** LightGBM tuné + calibration sigmoid + **Account Autoencoder (AE) embeddings**
 
 | Critère | Valeur |
 |---|---|
 | Hyperparamètres LGBM | `max_depth=5, learning_rate=0.1, min_child_samples=10` |
-| GNN | Autoencoder PyTorch sur 10 features per-node → 8-dim latent (425k comptes) |
+| AE (Account Autoencoder) | MLP PyTorch sur 10 features per-compte → 8-dim latent (425k comptes) |
 | Méthodologie tuning | TimeSeriesSplit + optimisation AP |
 | Calibration | Sigmoid (Platt scaling, cv=3) |
-| Features | **34** (18 base + 16 GNN = 8 sender + 8 receiver) |
+| Features | **34** (18 base + 16 AE = 8 sender + 8 receiver) |
 | AP test (calibré) | **0.6415** |
 | **Volume @ recall 80%** | **3,128 alertes/sem** |
 | Seuil opérationnel | 0.2433 = probabilité calibrée 24.3% (= 185× le taux de base) |
@@ -44,7 +56,7 @@
 | Baseline S2 (14 features, RF) | 5,950 |
 | Stage 1.2 graph features (NetworkX) | 5,678 (-5%) |
 | Stage 1.3 ensemble rank-avg RF+XGB+LGBM | 4,264 (-28%) |
-| **Stage 2.2+2.3 LGBM + GNN (34 features)** | **3,128 (-47%)** |
+| **Stage 2.2+2.3 LGBM + AE (34 features)** | **3,128 (-47%)** |
 
 ---
 
@@ -68,7 +80,7 @@
 | 2026-05-17 | Stage 4.1 SHAP analysis | ✅ |
 | 2026-05-17 | Stage 4.2 Stratification par typologie de blanchiment | ✅ |
 | 2026-05-18 | Stage 2.1 VAE embeddings (PyTorch) | ❌ non-adopté (RF+VAE seul, mais ensemble capture déjà le signal) |
-| 2026-05-19 | Stage 2.2 GNN embeddings (autoencoder PyTorch) | ✅ winner |
+| 2026-05-19 | Stage 2.2 Account Autoencoder embeddings (MLP PyTorch, anciennement "GNN") | ✅ winner |
 | 2026-05-19 | Stage 2.3 Feature fusion (concatenate 18+16) + LGBM final | ✅ winner |
 | 2026-05-19 | Visualisations finales (PR curve, confusion matrix, recall par typologie) | ✅ |
 
@@ -92,7 +104,7 @@
 **Testé** : VAE PyTorch (encoder 32→16→8 latent, decoder symétrique) sur les 18 features standardisées.
 **Résultat** : RF+VAE seul = 4,565/sem (-19.6% vs RF seul à 5,678/sem).
 **MAIS** : l'ensemble S1.3 sans VAE atteignait déjà 4,264/sem. VAE n'apporte pas de gain marginal au-dessus de l'ensemble.
-**Conclusion** : non adopté dans le notebook final. Le GNN (Stage 2.2) capture le signal structurel plus efficacement.
+**Conclusion** : non adopté dans le notebook final. L'Account Autoencoder (Stage 2.2) capture le signal structurel plus efficacement.
 
 ### Stage 3 — Anomaly detection (Isolation Forest, OCSVM, LOF — non adoptées)
 **Testé** : approches non-supervisées du paper Kungu et al. 2026 (IF, OCSVM, LOF).
@@ -118,18 +130,18 @@ Tous les 4 bugs identifiés ont été testés. Résultat mixte :
 
 ### Fix #2 — `fillna(0)` pour comptes inconnus du test ❌ TESTÉ ET REVERTÉ (2026-05-20)
 **Testé** : `fillna(median_train)` + ajout features `is_unknown_sender`, `is_unknown_receiver`.
-**Résultat** : Vol@R80 LGBM+GNN passé de 3,128 → 3,281 (+4.9%). Les flags `is_unknown_*` sont **constants à 0 sur le test** (SAML-D synthétique = même population train/test, tous les comptes du test sont dans le train).
+**Résultat** : Vol@R80 LGBM+AE passé de 3,128 → 3,281 (+4.9%). Les flags `is_unknown_*` sont **constants à 0 sur le test** (SAML-D synthétique = même population train/test, tous les comptes du test sont dans le train).
 **Conclusion** : reverté. Sur ce dataset, les features sont inutiles. À retenter sur des données réelles où les comptes test peuvent être totalement nouveaux.
 
 ### Fix #3 — Smurfing seuil 5000 non normalisé par devise ❌ TESTÉ ET REVERTÉ (2026-05-20)
 **Testé** : seuil P10 par `Payment_currency` au lieu du fixe 5000.
-**Résultat** : fan-out score voit sa discriminance s'inverser (top 10% = 0.014% suspect vs moyenne 0.097% = **anti-corrélation**). Vol@R80 LGBM+GNN dégradé.
+**Résultat** : fan-out score voit sa discriminance s'inverser (top 10% = 0.014% suspect vs moyenne 0.097% = **anti-corrélation**). Vol@R80 LGBM+AE dégradé.
 **Cause** : P10 par devise rend la base "petits montants" trop large/floue, dilue le signal layering.
 **Conclusion** : reverté. Le seuil fixe 5000 reste meilleur sur SAML-D.
 
 ### Fix #4 — `compute_risky_lists()` sans volume minimum ✅ APPLIQUÉ (2026-05-20)
 **Fix** : ajout `min_volume=100` excluant les modalités avec trop peu de transactions du train.
-**Impact** : neutre sur LGBM+GNN winner (3,128/sem inchangé). Méthodologie statistiquement plus robuste.
+**Impact** : neutre sur LGBM+AE winner (3,128/sem inchangé). Méthodologie statistiquement plus robuste.
 
 **Bilan P2** : 2 fixes appliqués (méthodologie), 2 reverts documentés (négatifs). Vol@R80 final = 3,128/sem inchangé.
 
