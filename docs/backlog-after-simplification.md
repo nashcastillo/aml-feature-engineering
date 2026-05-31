@@ -1,10 +1,16 @@
 # Backlog après pass de simplification
 
 **Date de création :** 2026-05-10
-**Dernière mise à jour :** 2026-05-20 — pass de fixes pré-soutenance
+**Dernière mise à jour :** 2026-05-27 — R7/R8 velocity désactivées (SAML-D ne simule pas ces patterns)
 **Projet :** aml-feature-engineering
 
 > **Renommage 2026-05-20** : ce qu'on appelait « **GNN embeddings** » dans les versions précédentes est en réalité un **autoencoder MLP per-compte** (pas de message passing graphique). Renommé partout en « **Account Autoencoder (AE)** » pour honnêteté technique. La composante « graphe » réelle du projet vient du Stage 1.2 (NetworkX : PageRank + degrees), déjà intégré aux 18 features de base.
+
+> **Règles R7 / R8 désactivées 2026-05-27** : deux règles velocity glissante ont été testées puis retirées car SAML-D ne simule pas ces patterns (0 vrai positif quel que soit le seuil) :
+> - **R7 burst 24h** : `sender_tx_24h > 3 OU receiver_tx_24h > 3` — typologie structuring court terme (3+ envois en 24h via MSB = frais récurrents incompatibles avec usage légitime particulier)
+> - **R8 velocity 28j** : `sender_tx_28d > 30 OU receiver_tx_28d > 30` — typologie velocity mensuelle (30+ envois/mois = signal LCB-FT MSB)
+>
+> Diagnostic test : sur 210 transactions laundering du test set, R7 capte 0 TP même en variant le seuil de 3 à 15. Le dataset synthétique SAML-D ne génère pas ces patterns temporels. **À réactiver en production sur données MSB réelles** où ces typologies sont bien documentées (guides Tracfin / GAFI). Le code de calcul des features `sender_tx_24h`, `receiver_tx_24h`, `sender_tx_28d`, `receiver_tx_28d` via `groupby().rolling(window, closed='left')` est conservé dans l'historique git (commit `f575753`) pour réutilisation directe.
 
 > **Liste pays sanctions 2026-05-21** : la règle R2 du baseline rule-based utilise une **UNION 4 sources officielles** (41 pays uniques, mai 2026) :
 > - **ONU** Security Council sanctions regimes (14 pays sous sanctions actives, avril 2026) — [un.org Consolidated List](https://main.un.org/securitycouncil/en/content/un-sc-consolidated-list)
@@ -42,12 +48,12 @@
 | **ML L1 à recall égal** | **21** | 62.9% |
 | **ML L1 à recall 80%** (cible compliance) | 3,128 | **80.0%** |
 
-**3 chiffres pour la soutenance :**
+**3 chiffres cles du projet :**
 1. À volume égal : ML détecte **1.6× plus** de cas suspects
 2. À recall égal (62.9%) : ML utilise **490× moins** de volume — précision 66% sur top 200 alertes
 3. Cible compliance recall 80% : Rule-based plafonne à 62.9%, ML L1 atteint 80% avec 3,128 alertes/sem (3.3× moins que rule-based à recall équivalent)
 
-**⚠️ Caveat soutenance :** le ratio 490× au point recall 62.9% est particulièrement élevé et reflète aussi le **caractère synthétique** de SAML-D. Sur des données bancaires réelles, ce ratio serait probablement inférieur. À mentionner honnêtement.
+**⚠️ Caveat méthodologique :** le ratio 490× au point recall 62.9% est particulièrement élevé et reflète aussi le **caractère synthétique** de SAML-D. Sur des données bancaires réelles, ce ratio serait probablement inférieur. À mentionner honnêtement dans toute communication du projet.
 
 **Trajectoire complète depuis la baseline initiale :**
 
@@ -92,7 +98,7 @@
 **Testé** : `hour_of_day`, `day_of_week`, `amount_log`, `amount_zscore_sender`, `amount_zscore_receiver`.
 **Résultat** : AP test −26%, volume@recall80 +4% (régression).
 **Cause** : SAML-D est synthétique, le diagnostic montre distribution suspect quasi-plate par tranche horaire (0.088% – 0.108%). Les patterns temporels production AML n'existent pas sur ce dataset.
-**Conclusion** : reverté. Argument soutenance "next step = vraies données KYC/historique/graphe".
+**Conclusion** : reverté. Argument projet "next step = vraies données KYC/historique/graphe".
 
 ### Stage 1.1 — Velocity features sender_tenure_days (testée et revertée)
 **Testé** : `sender_tenure_days`, `receiver_tenure_days` (jours depuis première apparition du compte dans train).
@@ -109,7 +115,7 @@
 ### Stage 3 — Anomaly detection (Isolation Forest, OCSVM, LOF — non adoptées)
 **Testé** : approches non-supervisées du paper Kungu et al. 2026 (IF, OCSVM, LOF).
 **Résultat** : Vol@R80 = 7,207 / 9,956 / 9,686 sem respectivement. Tous 2-3× pires que l'ensemble supervised.
-**Conclusion** : confirme que supervised >> unsupervised quand des labels existent. Argument soutenance pour positionner notre approche.
+**Conclusion** : confirme que supervised >> unsupervised quand des labels existent. Argument méthodologique pour positionner notre approche.
 
 ### LightGBM avec `scale_pos_weight=n_neg/n_pos`
 **Testé** : config standard XGB (`scale_pos_weight=1026`).
