@@ -93,6 +93,31 @@ Temps d'exécution complet : ~15-30 min sur 800k transactions (CPU, sans GPU req
 - **Pas de features KYC** : âge du compte, profil client, données déclaratives — un système production réel les inclurait.
 - **Pas d'historique multi-année** : 8.5 mois de train, fenêtre limitée pour calibrer la velocity long terme.
 
+## Roadmap
+
+### A. Passage à l'échelle
+- Validation croisée sur un **nouvel échantillon** (800k lignes distinctes, période différente) pour tester la généralisation du modèle
+- **Entraînement complet sur 9M lignes** avec un hold-out temporel (données les plus récentes)
+
+### B. Résolution du Cold Start
+- Flag `is_new_account` (faible ancienneté = signal de risque par défaut)
+- Couplage IA + règles métier strictes pour les comptes récents (pas d'historique → règles plus prudentes)
+
+### C. Interprétabilité & conformité (XAI)
+- Intégration des **SHAP values par alerte** (et non plus seulement globalement) pour répondre aux exigences réglementaires de justification des décisions automatisées
+- Cadres applicables : **article 22 RGPD** (droit à l'explication d'une décision automatisée), **ACPR / Tracfin** (auditabilité des modèles compliance)
+
+### D. Segmentation par typologies
+- Au lieu d'une probabilité globale, sortir la **typologie criminelle prédite** (smurfing / layering / structuring)
+- Permet à l'analyste compliance de prioriser et de cibler l'investigation
+
+### E. Compliance by design (sécurité des données)
+- **Anonymisation / tokenisation** des données sensibles avant toute manipulation (RGPD)
+- **Environnement sandbox** (Docker / cloud sécurisé), interdiction absolue de stocker des données réelles en local
+- **Audit de sécurité** des dépendances Python via `safety` et `bandit`
+- **Gestion stricte des secrets** (variables d'environnement, `.env` exclu du git)
+- **Traçabilité** : exportation systématique des journaux d'exécution du modèle (indispensable pour inspections ACPR / Tracfin)
+
 ## Stack technique
 
 Python · pandas · scikit-learn · LightGBM · XGBoost · PyTorch · NetworkX · SHAP · matplotlib · seaborn
