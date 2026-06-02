@@ -1,0 +1,62 @@
+name: Security audit
+
+# Audit automatique deps Python (safety) + code (bandit)
+# Cible compliance : exigence ACPR sur la maitrise des risques de la chaine d'outils ML
+
+on:
+  push:
+    branches: [main, master, soutenance-fixes]
+  pull_request:
+    branches: [main, master]
+  schedule:
+    # Audit hebdomadaire pour detecter les nouvelles CVE
+    - cron: '0 4 * * 1'
+
+jobs:
+  audit-dependencies:
+    name: Audit Python dependencies (safety)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install safety
+        run: pip install --upgrade pip safety
+
+      - name: Run safety check on requirements.txt
+        run: safety check --file requirements.txt --json --output .safety-results.json || true
+
+      - name: Upload safety report
+        uses: actions/upload-artifact@v4
+        with:
+          name: safety-report
+          path: .safety-results.json
+          retention-days: 30
+
+  audit-code:
+    name: Audit Python code (bandit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install bandit
+        run: pip install --upgrade pip bandit
+
+      - name: Run bandit on Python scripts
+        run: bandit -r scripts/ -f json -o .bandit-results.json || true
+
+      - name: Upload bandit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-report
+          path: .bandit-results.json
+          retention-days: 30

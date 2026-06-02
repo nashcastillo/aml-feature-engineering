@@ -1,0 +1,51 @@
+# --- Donnees sensibles : JAMAIS commiter ---
+*.csv
+*.parquet
+*.xlsx
+*.xls
+data/
+secrets/
+.env
+.env.local
+.env.*.local
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- Environnements virtuels ---
+venv/
+.venv/
+env/
+ENV/
+
+# --- Jupyter ---
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# --- IDE ---
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# --- Logs et artefacts ---
+logs/
+*.log
+*.pkl
+*.joblib
+models/
+outputs/
+
+# --- Audit / securite ---
+.bandit-results.json
+.safety-results.json

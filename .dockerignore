@@ -1,0 +1,28 @@
+# --- Ne JAMAIS embarquer dans l'image Docker ---
+# Donnees sensibles
+*.csv
+*.parquet
+data/
+secrets/
+.env
+
+# Python
+__pycache__
+*.pyc
+.venv
+venv
+
+# Jupyter
+.ipynb_checkpoints
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+
+# Logs
+logs/
+*.log

@@ -1,0 +1,27 @@
+# --- AML feature engineering - dependances pinnees ---
+# Versions LTS stables (mai 2026). Mise a jour sur audit safety/bandit periodique.
+
+# Data manipulation
+pandas~=2.2.0
+numpy~=1.26.0
+
+# Machine learning
+scikit-learn~=1.4.0
+lightgbm~=4.3.0
+xgboost~=2.1.0
+shap~=0.45.0
+
+# Deep learning (account autoencoder)
+torch~=2.3.0
+
+# Graph features
+networkx~=3.3.0
+
+# Visualisation
+matplotlib~=3.8.0
+seaborn~=0.13.0
+
+# Notebook
+jupyter~=1.0.0
+nbconvert~=7.16.0
+ipykernel~=6.29.0
