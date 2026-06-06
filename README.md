@@ -43,7 +43,7 @@ Split temporel 80 / 20 : train sur 255 jours (oct. 2022 - juin 2023), test sur 6
 - Sélection winner sur **CV mean_ap** (pas sur le test → anti-peeking strict)
 - Explicabilité : SHAP KernelExplainer sur le modèle calibré final
 
-### Baseline rules-based (6 règles)
+### Baseline rules-based (7 règles)
 
 Tous les seuils sont des constantes business — indépendants du train, **audit-friendly** devant ACPR / Tracfin :
 
@@ -55,27 +55,30 @@ Tous les seuils sont des constantes business — indépendants du train, **audit
 | **R4** | `sender_tx_count > 30` (all-time) | Hyperactivité chronique sender |
 | **R5** | `receiver_tx_count > 30` (all-time) | Symétrique R4 |
 | **R6** | `receiver_smurfing_score > 5` | 5+ senders distincts en petits montants = typologie smurfing |
+| **R7** | `Amount > 1 000` ET `sender_tx_count <= 3` | Cold start : compte sender peu connu → vigilance KYC renforcée |
 
 Combinaison OR : alerte si une condition est vérifiée.
 
-> Note : deux règles velocity glissante (R7 burst 24h, R8 velocity 28j) ont été testées puis retirées car SAML-D ne simule pas ces patterns (0 vrai positif). À réactiver en production sur données MSB réelles. Voir [`docs/backlog-after-simplification.md`](docs/backlog-after-simplification.md).
+> Note : deux règles velocity glissante (burst 24h, velocity 28j) ont été testées puis retirées car SAML-D ne simule pas ces patterns (0 vrai positif). À réactiver en production sur données MSB réelles. Voir [`docs/backlog-after-simplification.md`](docs/backlog-after-simplification.md).
 
 ## Résultats
 
 Test set : 160 000 transactions, 210 laundering, 9.3 semaines.
 
+> **Lecture en une phrase** : le rule-based **plafonne à 60 %** de recall — quoi qu'on fasse avec les 7 règles métier, on rate 40 % des cas suspects. Le ML calibré atteint la **cible compliance 80 %** avec **3.4 × moins d'alertes** — c'est l'apport central du projet.
+
 | Système | Alertes / sem | Recall | Précision |
 |---|---|---|---|
-| Rule-based (6 règles) | 7 751 | 33.3 % | 0.10 % |
-| **ML à volume égal** | 7 751 | **88.6 %** | 0.22 % |
-| ML à recall égal (33.3 %) | 8 | 33.3 % | — |
+| Rule-based (7 règles) | 10 867 | 60.0 % | 0.12 % |
+| **ML à volume égal** | 10 867 | **98.6 %** | 0.21 % |
+| ML à recall égal (60.0 %) | 14 | 60.0 % | — |
 | **ML cible compliance (recall 80 %)** | **3 177** | **80.0 %** | — |
 
 **Lecture compliance** :
 
-1. À volume d'alertes équivalent (~7 750 / sem), le ML détecte **2.7 × plus de cas suspects** que le rule-based.
-2. Pour atteindre le recall plafond du rule-based (33.3 %), le ML n'a besoin que de **8 alertes / semaine** au lieu de 7 751 — soit **1 028 × moins** de volume.
-3. Le rule-based **ne peut pas dépasser** 33.3 % de recall. Le ML calibré atteint 80 % de recall (cible compliance opérationnelle) avec 3 177 alertes / semaine.
+1. À volume d'alertes équivalent (~10 870 / sem), le ML détecte **1.6 × plus de cas suspects** que le rule-based.
+2. Pour atteindre le recall plafond du rule-based (60.0 %), le ML n'a besoin que de **14 alertes / semaine** au lieu de 10 867 — soit **788 × moins** de volume.
+3. Le rule-based **ne peut pas dépasser** 60.0 % de recall. Le ML calibré atteint 80 % de recall (cible compliance opérationnelle) avec 3 177 alertes / semaine — soit **+20 points** de recall à volume **3.4 × moindre**.
 
 ## Reproductibilité
 
