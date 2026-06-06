@@ -127,7 +127,7 @@ print(f"Diff receiver : ajoutés={RECEIVER_RISKY - expected_receiver}, retirés=
 print(f"Diff payments : ajoutés={RISKY_PAYMENT_TYPES - expected_payments}, retirés={expected_payments - RISKY_PAYMENT_TYPES}")
 ```
 
-L'écart attendu est faible (le train principal contient 80% du dataset, les pays à fort taux suspect le restent). Toute différence est documentée pour la soutenance.
+L'écart attendu est faible (le train principal contient 80% du dataset, les pays à fort taux suspect le restent). Toute différence est documentée.
 
 ### 4.2 Comparaison du recall avant/après
 

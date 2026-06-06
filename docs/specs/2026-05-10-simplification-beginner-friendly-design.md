@@ -8,9 +8,9 @@
 
 ## 1. Contexte et motivation
 
-Le notebook `feature_engineering_aml.ipynb` contient des cellules dont certains idiomes Python sont avancés (comprehensions, lambdas, `**kwargs`, chaînes pandas longues, fonctions volumineuses). L'utilisatrice est débutante en Python et prépare une soutenance Jedha où elle doit pouvoir **lire, comprendre et reproduire** chaque cellule sans assistance.
+Le notebook `feature_engineering_aml.ipynb` contient des cellules dont certains idiomes Python sont avancés (comprehensions, lambdas, `**kwargs`, chaînes pandas longues, fonctions volumineuses). L'utilisatrice est débutante en Python et doit pouvoir **lire, comprendre et reproduire** chaque cellule sans assistance.
 
-Une pass de simplification pédagogique est nécessaire avant la soutenance.
+Une pass de simplification pédagogique est nécessaire.
 
 ## 2. Objectif
 
@@ -25,7 +25,7 @@ Travail interactif **cellule par cellule**, du début du notebook à la fin :
 3. Si complexe → proposer une version simplifiée avec :
    - Le diff (ce qui change)
    - L'explication pédagogique (quel idiome remplace, par quoi, pourquoi)
-   - Le concept à retenir pour la soutenance
+   - Le concept à retenir
 4. L'utilisatrice valide ou pose des questions.
 5. Modification appliquée via NotebookEdit, exécutée dans Jupyter, validée.
 

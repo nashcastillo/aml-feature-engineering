@@ -141,7 +141,7 @@ Note : tâche 8 et 12 du plan original leakage (`2026-05-09-fix-risky-lists-leak
 
 - [ ] **Step 1 :** Proposer :
    - Remplacer `param_names = list(param_grid.keys()); param_values = list(param_grid.values()); combinations = list(product(*param_values))` par une approche plus directe : `combinations = list(product(*param_grid.values()))` puis `for combo in combinations:` avec `params = dict(zip(param_grid.keys(), combo))` (3 lignes au lieu de 4, plus claire).
-   - Garder `**fixed_params, **params` (idiome Python important pour la soutenance, expliquer en commentaire ce que ça fait).
+   - Garder `**fixed_params, **params` (idiome Python important, expliquer en commentaire ce que ça fait).
    - Sortir la boucle interne `for train_idx, test_idx in cv.split(...)` dans une fonction helper `evaluate_one_combo(model_class, full_params)` ? **NON** — ajouterait une couche d'indirection. Garder inline.
    - Cible : ~60 lignes → ~50 lignes (suppression des `param_names`/`param_values` séparés, tighten les prints).
 - [ ] **Step 2 :** Appliquer après validation, exécuter pour vérifier que la fonction tourne (juste le print de définition).

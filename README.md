@@ -146,9 +146,28 @@ python scripts/anonymize.py SAML-D_sample_800k.csv SAML-D_anonymized.csv
 - **Gestion stricte des secrets** : `.env` exclu du git via `.gitignore`, template `.env.example` fourni
 - **Traçabilité** : variables `LOG_LEVEL` / `LOG_DIR` pour exportation structurée des journaux d'inférence
 
+### F. Tests de robustesse — rééchantillonnage (finding méthodologique) — ✅ Documenté
+
+Question testée : `SMOTE` ou `RandomOversampler` peuvent-ils battre `class_weight='balanced'` sur le pipeline final ?
+
+**Méthodologie anti-leakage stricte** : `imblearn.Pipeline(SMOTE, LGBM)` wrappé dans `CalibratedClassifierCV(method='sigmoid', cv=3)` — SMOTE appliqué uniquement sur le train de chaque split interne, calibration apprise sur le held-out non resamplé, seuils interprétables comme probabilité calibrée sur la vraie distribution 0.1%.
+
+**Résultat à deux niveaux** :
+
+| Niveau | Métrique | baseline `class_weight` | SMOTE | Δ |
+|---|---|---|---|---|
+| LGBM seul (18 features) | AP test | 0.290 | 0.330 | **+14 %** |
+| **LGBM + AE (34 features)** | AP test | **0.6055** | 0.5097 | **−16 %** |
+
+**Lecture** : SMOTE apporte un gain réel sur LGBM seul mais devient contre-productif une fois les 16 embeddings autoencoder ajoutés. Hypothèse : l'interpolation linéaire de SMOTE est incompatible avec l'embedding non-linéaire de l'autoencoder (positifs synthétiques produits hors-manifold dans l'espace 34-dim). Le seuil calibré SMOTE chute à 0.002 vs 0.063 baseline, confirmant l'écrasement des probabilités.
+
+**Décision** : `class_weight='balanced'` conservé sur le pipeline final LGBM+AE. SMOTE documenté comme finding négatif méthodologique — voir [`docs/backlog-after-simplification.md`](docs/backlog-after-simplification.md#stage-24--smote-sur-lgbmae-testé-contre-productif-sur-pipeline-final) et cellules 47 + 56 du notebook.
+
+**Leçon générale** : l'efficacité de SMOTE dépend fortement de la nature des features. Sur des features riches et non-linéaires (embeddings, graphe), l'interpolation linéaire devient contre-productive. Évidence à mentionner si interrogé sur la gestion du déséquilibre.
+
 ## Stack technique
 
-Python · pandas · scikit-learn · LightGBM · XGBoost · PyTorch · NetworkX · SHAP · matplotlib · seaborn
+Python · pandas · scikit-learn · LightGBM · XGBoost · imbalanced-learn · PyTorch · NetworkX · SHAP · matplotlib · seaborn
 
 ## Structure du dépôt
 

@@ -33,7 +33,7 @@ L'utilisatrice est compliance officer AML par métier (10 ans d'expérience). La
 
 ### Métrique opérationnelle principale (NEW)
 
-`volume_at_recall_80` : nombre d'alertes par semaine nécessaires pour atteindre recall = 80% sur le test set. C'est la métrique opérationnelle que l'utilisatrice comprend, et celle qui parlera au jury Jedha.
+`volume_at_recall_80` : nombre d'alertes par semaine nécessaires pour atteindre recall = 80% sur le test set. C'est la métrique opérationnelle que l'utilisatrice comprend, et celle qui parle aux lecteurs métier.
 
 ### Métrique d'optimisation (changement de tuning)
 
@@ -53,7 +53,7 @@ L'utilisatrice est compliance officer AML par métier (10 ans d'expérience). La
 | Tâche | Coût code | Livrable |
 |---|---|---|
 | Ajouter métrique `volume_at_recall_80` au tableau seuils | ~10 lignes | Première mesure publiable |
-| Tuner par AP au lieu de recall@0.5 (P1.4) | 1 ligne | Tuning cohérent avec défense |
+| Tuner par AP au lieu de recall@0.5 (P1.4) | 1 ligne | Tuning cohérent avec la lecture finale |
 | Migrer StratifiedKFold → TimeSeriesSplit dans `manual_cv_tuning` | 2 lignes | Méthodo CV alignée production |
 
 **Vérification préalable TimeSeriesSplit** : compter les positifs dans chaque fold (n_splits=3). Si un fold a < 30 positifs, conserver StratifiedKFold et documenter le compromis.
@@ -70,12 +70,12 @@ L'utilisatrice est compliance officer AML par métier (10 ans d'expérience). La
 
 **Livrable S2** : modèle final identifié. `volume_at_recall_80` du modèle final mesuré et calibré.
 
-### Semaine 3 — Narratif comparatif (keystone soutenance) (3-5 jours)
+### Semaine 3 — Narratif comparatif (keystone) (3-5 jours)
 
 | Tâche | Coût code | Livrable |
 |---|---|---|
 | Baseline rule-based simple sur le même dataset (4-5 règles métier) | ~30 lignes | Point de comparaison ancré sur les données |
-| Comparaison ML vs rule-based à volume égal ET à recall égal | ~20 lignes | Tableau central de la soutenance |
+| Comparaison ML vs rule-based à volume égal ET à recall égal | ~20 lignes | Tableau central du rapport |
 | Tableau récap final : pour chaque modèle (recall, volume@recall80, AP, alertes/sem) | ~20 lignes | Slide-ready |
 
 **Règles candidates pour la baseline rule-based** :
@@ -87,19 +87,18 @@ L'utilisatrice est compliance officer AML par métier (10 ans d'expérience). La
 
 → Le set final sera ajusté lors de l'implémentation S3 selon ce qui donne un bon point de comparaison (recall similaire ou volume similaire au ML).
 
-**Livrable S3** : chiffre central de la soutenance, par exemple : "À volume égal, mon ML L1 atteint 80% recall vs ~30% pour rule-based — soit **2.5× plus de cas détectés**".
+**Livrable S3** : chiffre central du rapport, par exemple : "À volume égal, mon ML L1 atteint 80% recall vs ~30% pour rule-based — soit **2.5× plus de cas détectés**".
 
-### Semaine 4 — Soutenance
+### Semaine 4 — Finalisation rapport
 
 - Slide deck (focus narratif compliance + chiffres centraux)
-- Répétitions oral
-- Anticipation questions jury
+- Anticipation questions de revue
 
 ## 5. Choix méthodologiques
 
 ### Architecture
 - **Single-stage ML** comme L1 (pas de L2 ML ni de L2 règles strict)
-- L2 mentionné comme "next step" dans la soutenance, en notant les features manquantes (KYC, graphe relationnel, historique multi-mois)
+- L2 mentionné comme "next step" dans le rapport, en notant les features manquantes (KYC, graphe relationnel, historique multi-mois)
 
 ### Split des données
 - Split train/test temporel 80/20 (conservé depuis P1.3)
@@ -148,7 +147,7 @@ L'utilisatrice est compliance officer AML par métier (10 ans d'expérience). La
 |---|---|
 | TimeSeriesSplit donne des folds avec trop peu de positifs | Vérifier avant migration : compter positifs par fold (cible ≥ 30). Si insuffisant, conserver StratifiedKFold et documenter |
 | Tuning par AP fait baisser recall à seuil 0.5 | Ne plus mesurer recall@0.5 isolé. Mesurer `recall_at_volume_target` et `volume_at_recall_80` |
-| LightGBM perd contre les modèles existants | Documenter comme test négatif (utile soutenance : "j'ai testé, ça n'a pas apporté") |
+| LightGBM perd contre les modèles existants | Documenter comme test négatif (résultat utile : "j'ai testé, ça n'a pas apporté") |
 | Calibration `isotonic` overfit (peu de données positives) | Tester aussi `sigmoid` (plus paramétrique). Comparer AP avant/après calibration |
 | Rule-based baseline trop simpliste ou trop sophistiquée | Justifier par l'expérience métier ("règles typiques que je vois en production WU"). Itérer 2-3 versions si besoin |
 | 4 semaines trop court pour tout livrer | Plan S1+S3 sont les MUST. S2 LightGBM et BalancedRF sont des SHOULD. Calibration est un MUST (peu coûteux) |
@@ -162,7 +161,7 @@ L'utilisatrice est compliance officer AML par métier (10 ans d'expérience). La
 3. ✓ **Comparaison à un baseline rule-based** sur le même dataset, à volume égal ou à recall égal
 4. ✓ **Méthodologie cohérente** : split temporel + CV temporel + tuning par AP
 5. ✓ **Notebook propre**, exécuté de bout en bout sans erreur, sans data leakage
-6. ✓ **Narratif soutenance** centré sur : "ML L1 atteint 80% recall vs ~30% rule-based, à volume comparable — 2.5× plus de cas suspects détectés"
+6. ✓ **Narratif** centré sur : "ML L1 atteint 80% recall vs ~30% rule-based, à volume comparable — 2.5× plus de cas suspects détectés"
 
 ## 9. Référence backlog
 

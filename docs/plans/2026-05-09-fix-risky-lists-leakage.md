@@ -140,7 +140,7 @@ Vérifier deux choses dans l'output partagé par l'utilisateur :
 1. Les listes "Sender risques" / "Receiver risques" / "Types de paiement risques" sont non vides.
 2. Les diffs sont **petits** (idéalement vides, ou 1-2 modalités d'écart). Si la diff est massive (ex : 10 pays différents), c'est un signal qu'il faut investiguer.
 
-Documenter les listes finales — c'est un livrable de la soutenance.
+Documenter les listes finales — livrable du rapport.
 
 ---
 

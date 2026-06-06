@@ -1,7 +1,7 @@
 # Backlog après pass de simplification
 
 **Date de création :** 2026-05-10
-**Dernière mise à jour :** 2026-05-27 — R7/R8 velocity désactivées (SAML-D ne simule pas ces patterns)
+**Dernière mise à jour :** 2026-06-06 — Stage 2.4 SMOTE sur LGBM+AE documenté comme finding négatif
 **Projet :** aml-feature-engineering
 
 > **Renommage 2026-05-20** : ce qu'on appelait « **GNN embeddings** » dans les versions précédentes est en réalité un **autoencoder MLP per-compte** (pas de message passing graphique). Renommé partout en « **Account Autoencoder (AE)** » pour honnêteté technique. La composante « graphe » réelle du projet vient du Stage 1.2 (NetworkX : PageRank + degrees), déjà intégré aux 18 features de base.
@@ -20,7 +20,7 @@
 >
 > **10 pays retirés** des listes en 2024-2026 après réformes (Barbados, Cayman Islands, Gibraltar, Jamaica, Jordan, Panama, Philippines, Senegal, Uganda, UAE) — exclus conformément aux dernières plénières GAFI et règlements UE.
 >
-> Cette liste **complète** la liste interne `SENDER_RISKY` calculée sur train (Albania, Italy, Netherlands…) via `set | set`. Défense oral : « ma liste combine 4 sources réglementaires officielles à jour + enrichissement interne par retour d'expérience sur les typologies observées ».
+> Cette liste **complète** la liste interne `SENDER_RISKY` calculée sur train (Albania, Italy, Netherlands…) via `set | set`. Lecture : « ma liste combine 4 sources réglementaires officielles à jour + enrichissement interne par retour d'expérience sur les typologies observées ».
 
 ---
 
@@ -123,6 +123,30 @@
 **Fix** : `class_weight='balanced'` (sklearn-style). AP CV=0.0229, AP test=0.0551, volume@recall80=6,892/sem.
 **Conclusion** : leçon méthodologique sur la transposition d'hyperparamètres entre frameworks ML.
 
+### Stage 2.4 — SMOTE sur LGBM+AE (testé, contre-productif sur pipeline final)
+**Date** : 2026-06-06.
+**Contexte** : étude de sensibilité au rééchantillonnage (cellule 56 du notebook) → SMOTE bat `class_weight='balanced'` sur les 3 modèles tunés en CV TimeSeriesSplit (LGBM +105%, RF +157%, XGB +16% AP). Validation hold-out sur LGBM seul confirme un gain réel mais beaucoup plus modeste (+14% AP test). Question naturelle : ce gain persiste-t-il une fois les 16 embeddings autoencoder ajoutés (pipeline final LGBM+AE) ?
+**Testé** : `imblearn.Pipeline(SMOTE, LGBM)` wrappée dans `CalibratedClassifierCV(method='sigmoid', cv=3)`. Architecture anti-leakage stricte — SMOTE appliqué uniquement sur le train de chaque split interne, calibration apprise sur le held-out non resamplé, seuils interprétables comme probabilité calibrée sur la vraie distribution 0.1%.
+**Résultat** :
+
+| Métrique | baseline class_weight | SMOTE | Δ |
+|---|---|---|---|
+| AP test | **0.6055** | 0.5097 | **−16 %** |
+| Vol@R80 (alertes) | 35,315 | 41,287 | +17 % |
+| Vol@R80 (alertes/sem) | **3,803** | 4,446 | +643/sem |
+| Seuil calibré (proba) | 0.063 | 0.002 | écrasé |
+
+**Cause hypothèse 1 — Espace AE non-linéaire** : SMOTE interpole linéairement entre 2 vrais positifs dans un espace 34-dim dont 16 dimensions sont des embeddings autoencoder (manifold non-linéaire des features compte). Les positifs synthétiques se retrouvent hors-manifold, statistiquement absurdes — un "compte moyen" entre 2 blanchisseurs n'existe pas dans l'embedding AE.
+
+**Cause hypothèse 2 — Calibration sigmoid saturée** : le seuil calibré SMOTE tombe à 0.002 (vs 0.063 baseline). Même avec calibration apprise sur held-out non-SMOTE, le modèle SMOTE écrase les probabilités vers zéro. La sigmoid ne redresse pas sur cette plage. `method='isotonic'` corrigerait peut-être mais resterait une rustine.
+
+**Conclusion** : winner inchangé, `class_weight='balanced'` conservé sur le pipeline final LGBM+AE. SMOTE est documenté comme finding négatif méthodologique :
+- **Sur LGBM seul** (18 features tabulaires) : SMOTE = +14% AP test (gain réel mais à valider en prod).
+- **Sur LGBM+AE** (34 features avec embeddings non-linéaires) : SMOTE = −16% AP test (contre-productif).
+- **Leçon générale** : l'efficacité de SMOTE dépend fortement de la nature des features. Sur des features riches et non-linéaires (graph, embeddings, manifold), l'interpolation linéaire devient contre-productive.
+
+**Code** : cellule 47 du notebook (`Stage 2.4`) conservée comme preuve documentée. Cellule 56 (étude de sensibilité 9 combinaisons) conservée en amont.
+
 ---
 
 ## Bugs P2 — testés et résultats
@@ -157,6 +181,6 @@ Tous les 4 bugs identifiés ont été testés. Résultat mixte :
 
 - **Refacto en module Python `.py`** : ajouterait une couche d'abstraction qui complique la lecture pour un débutant.
 - **Optimisations de performance avancées** : le notebook tourne en quelques minutes, pas un sujet.
-- **Vraies données bancaires / KYC / historique multi-mois** : nécessaires pour réellement valider la performance en production. Mentionner à l'oral comme "extension naturelle hors scope projet Jedha".
+- **Vraies données bancaires / KYC / historique multi-mois** : nécessaires pour réellement valider la performance en production. À mentionner en revue comme "extension naturelle hors scope projet".
 - **CatBoost** : gain marginal vs LGBM, complexité d'encoding catégorielle. Skip.
 - **BalancedRandomForest** : redondant avec RF + class_weight balanced déjà testés.

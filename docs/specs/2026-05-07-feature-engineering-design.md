@@ -1,14 +1,14 @@
 # Feature Engineering Comportemental — AML Detection
 
 **Date :** 2026-05-07
-**Projet :** aml-feature-engineering (amelioration du projet final Jedha)
+**Projet :** aml-feature-engineering
 **Equipe :** Nashely Castillo
 
 ---
 
 ## 1. Contexte
 
-Le projet final Jedha utilise un Decision Tree (max_depth=10) avec 6 features pour detecter les transactions suspectes dans le dataset SAML-D (800k lignes, 0.1% suspectes). Le recall actuel est de 43%.
+Le projet baseline utilise un Decision Tree (max_depth=10) avec 6 features pour detecter les transactions suspectes dans le dataset SAML-D (800k lignes, 0.1% suspectes). Le recall actuel est de 43%.
 
 L'objectif est d'ameliorer le recall en ajoutant des features comportementales basees sur les patterns des comptes.
 
@@ -105,7 +105,7 @@ Le score = nombre de ces criteres remplis par les transactions passees du compte
 
 ## 5. Contraintes
 
-- **Simplicite** : chaque feature doit etre explicable en 1 phrase lors de la soutenance Jedha
+- **Simplicite** : chaque feature doit etre explicable en 1 phrase
 - **Pas de data leakage** : aucune feature n'utilise Is_laundering comme input
 - **Performance** : doit tourner sur 800k lignes sur un Mac en temps raisonnable
 - **Reproductibilite** : random_state=42, meme split que le projet original

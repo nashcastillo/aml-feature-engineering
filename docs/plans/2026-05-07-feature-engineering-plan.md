@@ -656,7 +656,7 @@ La validation croisee 5-fold donne une estimation plus robuste.
 # --- Validation croisee 5-fold ---
 # On recalcule les features sur tout le dataset pour la CV
 # (sklearn gere le split interne, mais les features sont calculees globalement
-# — c'est une approximation acceptable pour Jedha, cf. section Regard metier du spec)
+# — approximation acceptable pour ce projet, cf. section Regard metier du spec)
 
 df_cv = df.copy()
 
@@ -733,13 +733,13 @@ Expected: recall moyen > 0.43, ecart-type raisonnable
 - [a remplir apres execution]
 
 ### Limites :
-- **Data leakage temporel** : la validation croisee utilise les features calculees sur tout le dataset (approximation acceptable pour un projet Jedha). Les modeles principaux (Tasks 9-10) calculent les features sur le train uniquement.
+- **Data leakage temporel** : la validation croisee utilise les features calculees sur tout le dataset (approximation acceptable pour ce projet). Les modeles principaux (Tasks 9-10) calculent les features sur le train uniquement.
 ```
 
 - [ ] **Step 2: Commit**
 
 ```bash
-cd "/Users/nash/Documents/jedha/projet final/aml-feature-engineering"
+cd /path/to/aml-feature-engineering
 git add feature_engineering_aml.ipynb
 git commit -m "Add feature engineering notebook with 7 behavioral features"
 ```
