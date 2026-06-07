@@ -16,7 +16,7 @@ Ce projet quantifie le **gain d'un système ML** vs un rules-based de référenc
 
 [SAML-D](https://github.com/IBM/SAML-D) — Synthetic Anti-Money Laundering Dataset (IBM), 800 000 transactions, 21 pays, ~0.1 % laundering rate. **Caractère synthétique mentionné explicitement** dans toutes les communications du projet (caveat méthodologique).
 
-Split temporel 80 / 20 : train sur 255 jours (oct. 2022 - juin 2023), test sur 65 jours (juin - août 2023). Anti-leakage strict.
+Split temporel 80 / 20 : train sur 255 jours (oct. 2022 - juin 2023), test sur 65 jours (juin - août 2023). Train sous-divisé en train_inner (204 jours) + val held-out (51 jours) pour calibrer le seuil compliance sans toucher au test. Anti-leakage strict.
 
 ## Architecture
 
@@ -40,6 +40,7 @@ Split temporel 80 / 20 : train sur 255 jours (oct. 2022 - juin 2023), test sur 6
 - **Account Autoencoder (AE)** : MLP PyTorch per-compte (425k comptes) → 8-dim latent → 16 features (8 sender + 8 receiver)
 - Total : **34 features**
 - Méthodologie tuning : TimeSeriesSplit + optimisation Average Precision
+- **Split 3 segments** (anti-bias méthodologique) : train_inner (64 %) / val held-out (16 %) / test (20 %). Le seuil compliance est calibré sur val held-out puis appliqué tel quel sur test — pas de seuil choisi sur le test set (défendable face ACPR / Tracfin).
 - Sélection winner sur **CV mean_ap** (pas sur le test → anti-peeking strict)
 - Explicabilité : SHAP KernelExplainer sur le modèle calibré final
 
@@ -65,20 +66,20 @@ Combinaison OR : alerte si une condition est vérifiée.
 
 Test set : 160 000 transactions, 210 laundering, 9.3 semaines.
 
-> **Lecture en une phrase** : le rule-based **plafonne à 60 %** de recall — quoi qu'on fasse avec les 7 règles métier, on rate 40 % des cas suspects. Le ML calibré atteint la **cible compliance 80 %** avec **3.4 × moins d'alertes** — c'est l'apport central du projet.
+> **Lecture en une phrase** : le rule-based **plafonne à 60 %** de recall — quoi qu'on fasse avec les 7 règles métier, on rate 40 % des cas suspects. Le ML calibré (seuil figé sur validation held-out) atteint **86.7 % de recall sur test** avec **2.2 × moins d'alertes** que le rule-based — c'est l'apport central du projet.
 
 | Système | Alertes / sem | Recall | Précision |
 |---|---|---|---|
-| Rule-based (7 règles) | 10 867 | 60.0 % | 0.12 % |
-| **ML à volume égal** | 10 867 | **98.6 %** | 0.21 % |
-| ML à recall égal (60.0 %) | 14 | 60.0 % | — |
-| **ML cible compliance (recall 80 %)** | **3 177** | **80.0 %** | — |
+| Rule-based (7 règles) | 9 682 | 60.0 % | 0.14 % |
+| **ML à volume égal** | 9 682 | **86.7 %** | 0.20 % |
+| ML à recall égal (60.0 %) | 18 | 60.0 % | — |
+| **ML cible compliance (seuil figé val)** | **4 465** | **86.7 %** | — |
 
 **Lecture compliance** :
 
-1. À volume d'alertes équivalent (~10 870 / sem), le ML détecte **1.6 × plus de cas suspects** que le rule-based.
-2. Pour atteindre le recall plafond du rule-based (60.0 %), le ML n'a besoin que de **14 alertes / semaine** au lieu de 10 867 — soit **788 × moins** de volume.
-3. Le rule-based **ne peut pas dépasser** 60.0 % de recall. Le ML calibré atteint 80 % de recall (cible compliance opérationnelle) avec 3 177 alertes / semaine — soit **+20 points** de recall à volume **3.4 × moindre**.
+1. À volume d'alertes équivalent (~9 680 / sem), le ML détecte **1.4 × plus de cas suspects** que le rule-based (86.7 % vs 60.0 %).
+2. Pour atteindre le recall plafond du rule-based (60.0 %), le ML n'a besoin que de **18 alertes / semaine** au lieu de 9 682 — soit **538 × moins** de volume.
+3. Le rule-based **ne peut pas dépasser** 60.0 % de recall. Le ML calibré atteint 86.7 % de recall (seuil compliance figé sur 51 jours de validation held-out, recall mesuré sur test) avec 4 465 alertes / semaine — soit **+27 points** de recall à volume **2.2 × moindre**. La cible était 80 % en val : le test dépasse légèrement (86.7 %) car distribution proche mais pas identique, sans biais de seuil choisi sur test.
 
 ## Reproductibilité
 
@@ -133,12 +134,12 @@ python scripts/anonymize.py SAML-D_sample_800k.csv SAML-D_anonymized.csv
 - Impact mesuré : recall rule-based passe de 33.3 % à **60.0 %** (+27 points)
 
 ### C. Interprétabilité & conformité (XAI) — ✅ Implémenté
-- **SHAP par alerte** (cellule 48) : pour chaque alerte ML, top 5 features explicatives avec valeur, contribution SHAP et direction (pousse vers ALERTE / NORMAL)
+- **SHAP par alerte** (cellule 53) : pour chaque alerte ML, top 5 features explicatives avec valeur, contribution SHAP et direction (pousse vers ALERTE / NORMAL)
 - 3 cas types analysés : vrai positif, faux positif, borderline
 - Répond à l'**article 22 RGPD** (droit à l'explication d'une décision automatisée) et aux exigences **ACPR / Tracfin** d'auditabilité des modèles
 
 ### D. Segmentation par typologies — ✅ Implémenté
-- Stage 4.3 (cellule 54) : recall mesuré **par typologie LCB-FT** (17 catégories SAML-D) au seuil compliance recall 80 %
+- Stage 4.3 (cellule 63) : recall mesuré **par typologie LCB-FT** (17 catégories SAML-D) au seuil compliance (figé sur val held-out)
 - Identification des **zones aveugles** du ML (Behavioural_Change : 0 % recall — nécessite KYC dynamique) et des **forces** (Smurfing, Cash_Withdrawal, Layered_Fan_Out : 100 % recall)
 - Permet à l'analyste compliance de prioriser l'investigation
 
@@ -176,7 +177,7 @@ Python · pandas · scikit-learn · LightGBM · XGBoost · imbalanced-learn · P
 
 ```
 .
-├── feature_engineering_aml.ipynb       # Notebook principal (56 cellules)
+├── feature_engineering_aml.ipynb       # Notebook principal (67 cellules)
 ├── requirements.txt                    # Dépendances Python pinnées
 ├── Dockerfile                          # Sandbox reproductible (non-root, sans données)
 ├── .dockerignore                       # Exclut données et secrets de l'image
