@@ -128,7 +128,7 @@ python scripts/anonymize.py SAML-D_sample_800k.csv SAML-D_anonymized.csv
 ## Limitations explicites
 
 - **Dataset synthétique** : les ratios ML / rule-based sont probablement gonflés vs un environnement bancaire réel. SAML-D ne simule pas tous les patterns réels (notamment pas les bursts velocity 24h ni les velocity mensuelles).
-- **Pas de features KYC** : âge du compte, profil client, données déclaratives — un système production réel les inclurait.
+- **Pas de features KYC — limitation intrinsèque au dataset** : SAML-D ne contient **aucune feature KYC** (les 12 features sont purement transactionnelles, confirmé par [Oztas et al. 2023 section IV](https://doi.org/10.1109/ICEBE59045.2023.00028)). Variables KYC absentes : âge du compte, profession, source des fonds, statut PEP (Personne Politiquement Exposée), customer risk rating, niveau de Customer Due Diligence (CDD), beneficial owner. En production réelle, un système LCB-FT bancaire intègre obligatoirement ces variables (voir guides Tracfin et GAFI 40 recommandations) — c'est l'étape A.1 à intégrer après validation sur SAML-D.
 - **Pas d'historique multi-année** : 8.5 mois de train, fenêtre limitée pour calibrer la velocity long terme.
 
 ## Roadmap & implémentation
