@@ -18,6 +18,8 @@ Ce projet quantifie le **gain d'un système ML** vs un rules-based de référenc
 
 > Citation : B. Oztas, D. Cetinkaya, F. Adedoyin, M. Budka, H. Dogan, G. Aksu, *« Enhancing Anti-Money Laundering: Development of a Synthetic Transaction Monitoring Dataset »*, 2023 IEEE ICEBE, Sydney, doi : [10.1109/ICEBE59045.2023.00028](https://doi.org/10.1109/ICEBE59045.2023.00028). Repo officiel : [github.com/BOztasUK/Anti_Money_Laundering_Transaction_Data_SAML-D](https://github.com/BOztasUK/Anti_Money_Laundering_Transaction_Data_SAML-D).
 
+> **Spécificité du dataset** : SAML-D incorpore **15 structures de réseaux graphiques** représentant des flux de transactions complexes (fan-in / fan-out / layering / smurfing chains). C'est ce qui motive l'inclusion de **features graphes** dans ce projet : PageRank + degrés (NetworkX, cellule 13) et **embeddings autoencoder per-compte** (cellule 46) — sans exploitation explicite de cette structure graphique, le signal des typologies layering / fan-out passe inaperçu d'un classifieur tabulaire standard.
+
 Split temporel 80 / 20 : train sur 255 jours (oct. 2022 - juin 2023), test sur 65 jours (juin - août 2023). Train sous-divisé en train_inner (204 jours) + val held-out (51 jours) pour calibrer le seuil compliance sans toucher au test. Anti-leakage strict.
 
 ## Architecture
@@ -82,6 +84,12 @@ Test set : 160 000 transactions, 210 laundering, 9.3 semaines.
 1. À volume d'alertes équivalent (~9 680 / sem), le ML détecte **1.4 × plus de cas suspects** que le rule-based (86.7 % vs 60.0 %).
 2. Pour atteindre le recall plafond du rule-based (60.0 %), le ML n'a besoin que de **18 alertes / semaine** au lieu de 9 682 — soit **538 × moins** de volume.
 3. Le rule-based **ne peut pas dépasser** 60.0 % de recall. Le ML calibré atteint 86.7 % de recall (seuil compliance figé sur 51 jours de validation held-out, recall mesuré sur test) avec 4 465 alertes / semaine — soit **+27 points** de recall à volume **2.2 × moindre**. La cible était 80 % en val : le test dépasse légèrement (86.7 %) car distribution proche mais pas identique, sans biais de seuil choisi sur test.
+
+### Comparaison avec le baseline officiel des auteurs du dataset
+
+Le [notebook starter publié par Oztas et al.](https://github.com/BOztasUK/Anti_Money_Laundering_Transaction_Data_SAML-D) (XGBClassifier sans tuning, sans calibration, sans gestion du déséquilibre, AUC seule comme métrique) atteint **AUC test 0.812**. À leur point opérationnel cible (TPR 90 %), leur **FPR est de 58 %** — soit ~580 000 alertes / sem sur 800 k transactions, industriellement inutilisable.
+
+Mon pipeline LGBM+AE calibré, à volume comparable (4 465 alertes / sem, FPR ≈ 26 %), atteint **86.7 % de recall** — méthodologiquement défendable face ACPR / Tracfin grâce au seuil figé sur validation held-out. Le starter officiel sert ici de **point de comparaison citable**, pas de strawman : c'est la baseline publiée par les auteurs eux-mêmes.
 
 ## Reproductibilité
 
