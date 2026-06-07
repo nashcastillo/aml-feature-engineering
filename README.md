@@ -14,7 +14,9 @@ Ce projet quantifie le **gain d'un système ML** vs un rules-based de référenc
 
 ## Dataset
 
-[SAML-D](https://github.com/IBM/SAML-D) — Synthetic Anti-Money Laundering Dataset (IBM), 800 000 transactions, 21 pays, ~0.1 % laundering rate. **Caractère synthétique mentionné explicitement** dans toutes les communications du projet (caveat méthodologique).
+[SAML-D](https://www.kaggle.com/datasets/berkanoztas/synthetic-transaction-monitoring-dataset-aml) — Synthetic Anti-Money Laundering Dataset (Oztas et al., Bournemouth University, 2023). Dataset complet : **9.5 M transactions, 28 typologies (11 normales + 17 suspectes), 0.1039 % laundering rate**. Échantillon utilisé dans ce projet : **800 000 transactions, 18 pays, ~0.1 % laundering rate**, période oct. 2022 - août 2023. **Caractère synthétique mentionné explicitement** dans toutes les communications du projet (caveat méthodologique).
+
+> Citation : B. Oztas, D. Cetinkaya, F. Adedoyin, M. Budka, H. Dogan, G. Aksu, *« Enhancing Anti-Money Laundering: Development of a Synthetic Transaction Monitoring Dataset »*, 2023 IEEE ICEBE, Sydney, doi : [10.1109/ICEBE59045.2023.00028](https://doi.org/10.1109/ICEBE59045.2023.00028). Repo officiel : [github.com/BOztasUK/Anti_Money_Laundering_Transaction_Data_SAML-D](https://github.com/BOztasUK/Anti_Money_Laundering_Transaction_Data_SAML-D).
 
 Split temporel 80 / 20 : train sur 255 jours (oct. 2022 - juin 2023), test sur 65 jours (juin - août 2023). Train sous-divisé en train_inner (204 jours) + val held-out (51 jours) pour calibrer le seuil compliance sans toucher au test. Anti-leakage strict.
 
