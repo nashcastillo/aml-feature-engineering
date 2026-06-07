@@ -27,12 +27,15 @@ Split temporel 80 / 20 : train sur 255 jours (oct. 2022 - juin 2023), test sur 6
 ### Feature engineering (18 features de base)
 
 - **Fréquence** : `sender_tx_count`, `receiver_tx_count` (all-time sur train)
-- **Listes pays à risque** : UNION 4 sources officielles (41 pays uniques, mai 2026)
+- **Listes pays à risque** : UNION 4 sources officielles + liste interne empirique + déclaration auteurs dataset = **50 pays uniques** (juin 2026)
   - ONU Security Council sanctions (14 pays)
   - OFAC sanctions programs incluant Ethiopia EO 14046 (8 ajouts)
   - GAFI / FATF black + grey list (plénière 13 février 2026 : 3 + 22)
   - UE Règlement délégué 2016/1675 amendé par 2025/1184, 2026/46, 2026/83
-  - + liste interne enrichie sur historique SAML-D
+  - + liste interne enrichie empiriquement sur historique SAML-D (5 pays : Albanie, Inde, Italie, Pays-Bas, Suisse)
+  - + 4 régions déclarées hauts risques par les auteurs du dataset SAML-D (Mexique, Turquie, Maroc, UAE — citées dans le [README officiel BOztasUK](https://github.com/BOztasUK/Anti_Money_Laundering_Transaction_Data_SAML-D)). Ces 4 pays ne passent pas le seuil empirique 3× sur train_inner (taux 1.8-2.3×), mais constituent un **signal métier documenté à conserver** par traçabilité des sources.
+
+> **Finding méthodologique** : l'ajout d'OZTAS_HIGH_RISK à la règle R2 du rule-based **ne modifie pas les performances** (89 907 alertes, 60.0 % recall, 126 TP — identiques avant/après). Les transactions Mexico/Turkey/Morocco/UAE sont déjà captées par R1 (Amount > 10 k), R4/R5 (hyperactif), R6 (smurfing) ou R7 (cold start). Le rule-based est **saturé** : ajouter des pays redondants ne change rien quand les règles existantes captent déjà le signal. On garde quand même OZTAS_HIGH_RISK pour la **défendabilité métier** (toutes les sources documentées sont intégrées), pas pour un gain de performance.
 - **Payment types à risque** : Cash Deposit / Cash Withdrawal / Cross-border + observations internes
 - **Smurfing score** : nb de senders distincts en petits montants par receiver
 - **Fan-out score** : nb de receivers distincts en petits montants par sender
