@@ -182,6 +182,24 @@ Question testée : `SMOTE` ou `RandomOversampler` peuvent-ils battre `class_weig
 
 **Leçon générale** : l'efficacité de SMOTE dépend fortement de la nature des features. Sur des features riches et non-linéaires (embeddings, graphe), l'interpolation linéaire devient contre-productive. Évidence à mentionner si interrogé sur la gestion du déséquilibre.
 
+### G. Features temporelles (Hour, DayOfWeek, amount_log, amount_zscore) — testées et revertées — ✅ Documenté
+
+Question testée : ajouter des features temporelles (heure, jour de semaine) et behavioral (log et z-score d'Amount) au-dessus des 18 features de base améliore-t-il le pipeline ?
+
+**Résultat mesuré** (Lever 1 Phase A) :
+
+| Feature ajoutée | AP test | Vol@R80 |
+|---|---|---|
+| `hour_of_day` + `day_of_week` + `amount_log` + `amount_zscore_sender` + `amount_zscore_receiver` | **−26 %** | **+4 %** (régression) |
+
+**Cause** : SAML-D ne génère pas de patterns horaires réalistes. Diagnostic empirique : taux suspect quasi-plat par tranche horaire (**0.088 % – 0.108 %**, vs moyenne globale 0.095 %). Les patterns de transactions nocturnes / weekend, bien documentés en production AML (guides Tracfin / GAFI), n'existent pas dans le générateur synthétique d'Oztas.
+
+**Décision** : features temporelles **retirées** du pipeline final (cf. spec `docs/specs/2026-05-07-feature-engineering-design.md` section 3.4). Voir aussi [backlog Lever 1 Phase A](docs/backlog-after-simplification.md).
+
+**Comparaison vs baseline Oztas** : le starter officiel extrait `Hour`, `Date_Year`, `Date_Month`, `Date_Day` sans mesurer l'impact (AUC 0.812 obtenu *avec* ces features, sans tuning ni comparaison). Mon pipeline a **mesuré** leur effet et constaté une régression — décision documentée, pas intuitive.
+
+**Leçon générale** : les features temporelles classiques (heure, jour de semaine) sont sensibles à la qualité du générateur de données synthétiques. À **réactiver en production sur données MSB réelles** où les patterns nocturnes / weekend sont documentés.
+
 ## Stack technique
 
 Python · pandas · scikit-learn · LightGBM · XGBoost · imbalanced-learn · PyTorch · NetworkX · SHAP · matplotlib · seaborn
