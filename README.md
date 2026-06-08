@@ -200,6 +200,31 @@ Question testée : ajouter des features temporelles (heure, jour de semaine) et 
 
 **Leçon générale** : les features temporelles classiques (heure, jour de semaine) sont sensibles à la qualité du générateur de données synthétiques. À **réactiver en production sur données MSB réelles** où les patterns nocturnes / weekend sont documentés.
 
+### H. Architecture hybride R-AND-ML (intersection) — testée et non adoptée — ✅ Documenté
+
+Hypothèse testée : alerter seulement si **rule-based ET ML** d'accord (intersection) — supposément "deux signaux concordants" = haute confiance + réduction des faux positifs.
+
+**Résultat mesuré** (cellules 58-59 du notebook) :
+
+| Architecture | Alertes / sem | TP / sem | Précision | Recall |
+|---|---|---|---|---|
+| Rule-based seul (7 règles) | 9 682 | 13.6 | 0.14 % | 60.0 % |
+| **ML seul (cible compliance)** | **4 465** | **19.6** | **0.44 %** | **86.7 %** |
+| **R-AND-ML (meilleur seuil 0.5)** | **1 171** | **4.2** | **0.36 %** | **18.6 %** |
+
+**Diagnostic** : l'intersection R-AND-ML **est pire que le ML seul** — elle rate **79 % des cas** que le ML détecterait (4.2 TP/sem vs 19.6 TP/sem) pour quasi-aucun gain de précision (0.36 % vs 0.44 %).
+
+**Cause** : le rule-based et le ML captent des **typologies LCB-FT disjointes**, pas redondantes :
+- Rule-based capte : violations de seuils métier (montant, pays sanctions, hyperactif, smurfing brut)
+- ML capte : patterns statistiques subtils (layering, behavioral change, fan-out fin, embeddings autoencoder)
+- **Intersection** : 111 cas sur 210 (52.9 %) au mieux — le rule-based rate **71 cas que le ML voit**
+
+**Décision** : R-AND-ML **non adopté**. Le ML seul (cible compliance) reste le winner. L'hypothèse "deux systèmes d'accord = signal renforcé" supposait une **redondance** qui n'existe pas sur SAML-D.
+
+**Alternative à explorer en production** : architecture **cascade L1→L2** (rule-based en filtre L1 audit-friendly, ML en re-scoring L2 pour priorisation) plutôt qu'intersection brutale. Cette piste n'est **pas implémentée** dans ce projet — laissée en roadmap.
+
+**Leçon générale** : ne jamais présupposer la redondance entre deux systèmes de détection. Mesurer empiriquement leur recouvrement avant de combiner.
+
 ## Stack technique
 
 Python · pandas · scikit-learn · LightGBM · XGBoost · imbalanced-learn · PyTorch · NetworkX · SHAP · matplotlib · seaborn
